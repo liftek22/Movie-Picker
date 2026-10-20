@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family Movie Day: Pick Your Top 3</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--text:#f8fafc;--muted:#94a3b8;--accent:#ec4899;--primary:#6366f1;--cat:#38bdf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,Verdana,sans-serif;padding-bottom:130px}
+header{text-align:center;padding:34px 18px 10px}
+h1{margin:0 0 8px;font-size:clamp(1.8rem,6vw,2.6rem)}
+.sub{color:var(--muted);margin:0 auto;max-width:56ch}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:16px 14px 0;max-width:1200px;margin:0 auto}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:99px;padding:7px 14px;font:inherit;font-size:.9rem;cursor:pointer}
+.chip.on{background:var(--primary);border-color:var(--primary)}
+main{max-width:1200px;margin:0 auto;padding:0 16px}
+h2{color:var(--cat);font-size:1.5rem;border-bottom:2px solid var(--card);padding-bottom:8px;margin:36px 0 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+.card{background:var(--card);border:3px solid transparent;border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;text-align:left;color:inherit;font:inherit;padding:0;box-shadow:0 10px 15px -3px rgba(0,0,0,.35);transition:transform .15s,border-color .15s}
+.card:hover{transform:translateY(-4px)}
+.card:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.card.on{border-color:var(--accent)}
+.poster{position:relative;aspect-ratio:2/3;background:var(--line);overflow:hidden}
+.tile{position:absolute;inset:0;display:flex;align-items:flex-end;padding:14px;font-weight:800;font-size:1.25rem;line-height:1.1;text-transform:uppercase;text-shadow:0 2px 4px rgba(0,0,0,.5)}
+.poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s}
+.poster img.ok{opacity:1}
+.b{position:absolute;top:10px;background:rgba(15,23,42,.82);padding:3px 9px;font-size:.75rem;font-weight:700;border-radius:6px;backdrop-filter:blur(4px)}
+.by{left:10px}.br{right:10px}
+.rank{position:absolute;left:10px;bottom:10px;width:42px;height:42px;border-radius:50%;background:var(--accent);display:none;align-items:center;justify-content:center;font-weight:800;font-size:1.3rem;border:3px solid #fff}
+.card.on .rank{display:flex}
+.info{padding:12px 14px 16px}
+.info h3{margin:0 0 6px;font-size:1.02rem}
+.info p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.4}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#111a30;border-top:2px solid var(--line);padding:12px 16px}
+.in{max-width:1200px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.cnt{font-weight:700;flex:1 1 100%}
+.bar input{flex:1 1 150px;min-width:0;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.btn{background:var(--primary);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.g{background:#10b981}
+#out{display:none;width:100%}
+#out textarea{width:100%;height:110px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:10px;font:inherit}
+#out .row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+<h1>🎬 Aishah, Subhu, Abyaz Movie Day🎬 </h1>
+<h1> with Sunny Mama and Pryoti Mami </h1>
+<p class="sub">Tap up to 3 movies. The first one you tap is your number 1 pick. Then add your name and send your picks back.</p>
+</header>
+<div class="chips" id="chips"></div>
+<main id="main"></main>
+<div class="bar"><div class="in">
+<div class="cnt" id="cnt">0 of 3 picked</div>
+<input id="name" placeholder="Your name" maxlength="30" aria-label="Your name">
+<input id="note" placeholder="Snack request or note (optional)" maxlength="120" aria-label="Note">
+<button class="btn" id="send" disabled>Send my picks</button>
+<div id="out"><textarea id="txt" readonly></textarea>
+<div class="row"><button class="btn" id="copy">Copy</button><a class="btn g" id="wa" target="_blank" rel="noopener" style="text-decoration:none">Send on WhatsApp</a></div></div>
+</div></div>
+<script>
+// [category, title, year, rating, description, search term for poster lookup, colour 1, colour 2]
+// To force a specific poster, add a 9th item: a full image URL.
+var CATS=["Inspiring True Stories & STEM","Fairy Tales, Romance & Adventure","Musical and Funny","Anime & Animated Adventures"];
+var M=[
+[0,"Hidden Figures",2016,"PG","Three brilliant mathematicians help NASA launch astronauts into space.","Hidden Figures","#1f6fb2","#0b2a55"],
+[0,"Akeelah and the Bee",2006,"PG","A girl with a huge talent for words aims for the national spelling bee.","Akeelah and the Bee","#f2a900","#8a4b00"],
+[0,"Queen of Katwe",2016,"PG","A girl from Uganda discovers chess and becomes a champion.","Queen of Katwe","#e0892b","#7a2d1a"],
+[0,"October Sky",1999,"PG","A teen builds real rockets in his backyard and dreams of space.","October Sky","#3a6ea5","#1b2b4a"],
+[0,"King Richard",2021,"PG-13","How Venus and Serena Williams became tennis legends.","King Richard","#3f9a54","#14402a"],
+[0,"The Pursuit of Happyness",2006,"PG-13","A dad never gives up building a better life for his son. Emotional but hopeful.","The Pursuit of Happyness","#2f8f6b","#124a38"],
+[0,"The Boy Who Harnessed the Wind",2019,"PG","A teen builds a windmill from scrap to save his village. Quite heavy.","The Boy Who Harnessed the Wind","#c7842f","#5a3515"],
+[2,"Enchanted",2007,"PG","A fairy-tale princess lands in real New York City. Songs, jokes and a confused prince.","Enchanted","#e86aa8","#6a2c91"],
+[1,"Ever After: A Cinderella Story",1998,"PG-13","A clever Cinderella who rescues herself. Castles, costumes and a little romance.","Ever After A Cinderella Story","#b0584a","#4b2a5e"],
+[1,"The Princess Bride",1987,"PG","Sword fights, giants, true love and very silly jokes.","The Princess Bride","#7d4fb3","#2a1a55"],
+[1,"Enola Holmes",2020,"PG-13","Sherlock's little sister solves a mystery and outsmarts everyone.","Enola Holmes","#2d7f9a","#1a3350"],
+[2,"Roald Dahl's Matilda the Musical",2022,"PG","A super-smart girl outwits cruel grown-ups with songs and a little magic.","Matilda the Musical","#d6264f","#6a1b6e"],
+[3,"Leo",2023,"PG","A classroom lizard helps kids while having a lizard-sized life crisis.","Leo Adam Sandler","#6aa84f","#2b5a2b"],
+[3,"Nimona",2023,"PG","A shape-shifting rebel teams up with a knight. Funny, wild and surprising.","Nimona","#ff4fa3","#3a1f7a"],
+[3,"Thelma the Unicorn",2024,"PG","A pony becomes a pop star and finds out what fame is really like.","Thelma the Unicorn","#f06ac9","#5b3fd0"],
+[2,"School of Rock",2003,"PG-13","A wild substitute teacher turns his class into a real rock band.","School of Rock","#f2b705","#c1272d"],
+[3,"SPY x FAMILY CODE: White",2023,"PG-13","A spy, an assassin and a mind-reading girl pretend to be a family. Some action.","Spy x Family Code White","#e2475b","#1c1c3a"],
+[3,"The Legend of Hei",2019,"NR","A cat spirit explores a magical world of humans and spirits.","The Legend of Hei","#2fa38e","#173a5a"],
+[3,"Words Bubble Up Like Soda Pop",2021,"NR","A shy poet and a music-loving girl share one magical summer.","Words Bubble Up Like Soda Pop","#3cc0e0","#c04a8a"],
+[3,"The Wild Robot",2024,"PG","A robot stranded in the wild raises an orphaned gosling.","The Wild Robot","#4f9a5b","#1c3a35"],
+[3,"Spider-Man: Into the Spider-Verse",2018,"PG","A teen gets spider powers and meets Spider-People from other worlds.","Spider-Man Into the Spider-Verse","#d6264f","#3b2a9e"],
+[3,"The Mitchells vs. the Machines",2021,"PG","A weird family road trip turns into a robot uprising. Hilarious.","The Mitchells vs the Machines","#ff7a1a","#7a1fa2"]];
+
+var sel=[],cards=[],heads=[],grids=[],chipEls=[];
+var main=document.getElementById("main"),chips=document.getElementById("chips");
+
+function chip(label,idx){
+  var b=document.createElement("button");b.className="chip"+(idx===-1?" on":"");b.textContent=label;
+  b.onclick=function(){
+    chipEls.forEach(function(c){c.classList.remove("on")});b.classList.add("on");
+    heads.forEach(function(h,i){var show=idx===-1||idx===i;h.style.display=show?"":"none";grids[i].style.display=show?"":"none"});
+  };
+  chips.appendChild(b);chipEls.push(b);
+}
+chip("All",-1);
+CATS.forEach(function(name,ci){
+  chip(name,ci);
+  var h=document.createElement("h2");h.textContent=name;main.appendChild(h);heads.push(h);
+  var g=document.createElement("div");g.className="grid";main.appendChild(g);grids.push(g);
+  M.forEach(function(m,i){
+    if(m[0]!==ci)return;
+    var b=document.createElement("button");b.type="button";b.className="card";
+    b.innerHTML='<div class="poster"><div class="tile" style="background:linear-gradient(150deg,'+m[6]+','+m[7]+')">'+m[1]+'</div><img alt="Poster for '+m[1]+'"><span class="b by">'+m[2]+'</span><span class="b br">'+m[3]+'</span><span class="rank"></span></div><div class="info"><h3>'+(i+1)+'. '+m[1]+'</h3><p>'+m[4]+'</p></div>';
+    b.onclick=function(){var k=sel.indexOf(i);if(k>-1)sel.splice(k,1);else if(sel.length<3)sel.push(i);else return;render()};
+    cards[i]=b;g.appendChild(b);
+    loadPoster(m,b.querySelector("img"));
+  });
+});
+
+function norm(s){return s.toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
+function show(img,url){img.onload=function(){img.classList.add("ok")};img.onerror=function(){img.remove()};img.src=url}
+function loadPoster(m,img){
+  if(m[8]){show(img,m[8]);return}
+  var key="poster:"+m[1];
+  try{var c=sessionStorage.getItem(key);if(c){show(img,c);return}}catch(e){}
+  fetch("https://itunes.apple.com/search?media=movie&entity=movie&limit=8&term="+encodeURIComponent(m[5]))
+    .then(function(r){return r.json()}).then(function(d){
+      var q=norm(m[5]).replace(/ 2015$/,""),best=null,loose=null;
+      (d.results||[]).forEach(function(r){
+        if(!r.artworkUrl100)return;
+        var y=parseInt((r.releaseDate||"").slice(0,4),10),n=norm(r.trackName||"");
+        var nameOk=n.indexOf(q)>-1||q.indexOf(n)>-1;
+        if(nameOk&&Math.abs(y-m[2])<=1&&!best)best=r;
+        else if(nameOk&&!loose)loose=r;
+      });
+      var r=best||loose;if(!r)return;
+      var url=r.artworkUrl100.replace(/\d+x\d+bb/,"400x600bb");
+      try{sessionStorage.setItem(key,url)}catch(e){}
+      show(img,url);
+    }).catch(function(){});
+}
+
+function render(){
+  cards.forEach(function(c,i){var k=sel.indexOf(i);c.classList.toggle("on",k>-1);c.querySelector(".rank").textContent=k>-1?k+1:"";c.setAttribute("aria-pressed",k>-1)});
+  document.getElementById("cnt").textContent=sel.length+" of 3 picked";
+  document.getElementById("send").disabled=!sel.length;
+}
+document.getElementById("send").onclick=function(){
+  var n=document.getElementById("name").value.trim()||"Me",note=document.getElementById("note").value.trim();
+  var t=n+"'s movie picks:\n"+sel.map(function(i,k){return (k+1)+". "+M[i][1]+" ("+M[i][2]+")"}).join("\n")+(note?"\nNote: "+note:"");
+  var o=document.getElementById("out"),x=document.getElementById("txt");
+  o.style.display="block";x.value=t;
+  document.getElementById("wa").href="https://wa.me/?text="+encodeURIComponent(t);
+  if(navigator.share){navigator.share({text:t}).catch(function(){})}
+};
+document.getElementById("copy").onclick=function(){
+  var x=document.getElementById("txt");x.select();
+  try{navigator.clipboard.writeText(x.value)}catch(e){document.execCommand("copy")}
+  this.textContent="Copied!";var b=this;setTimeout(function(){b.textContent="Copy"},1500);
+};
+</script>
+</body>
+</html>
